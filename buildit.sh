@@ -1,1 +1,1 @@
-g++ -g mars.cc
+g++ -g histeq.cc
