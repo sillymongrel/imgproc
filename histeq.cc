@@ -61,9 +61,8 @@ float* hist(const uint8_t* img, const int w, const int h)
 // N = total nunber of pixels in the image
 // n_i is the number of pixels at greylevel i.
 // 
-// This formula normalises the CDF of the histogram to the 
-// 
-// for each pixel level. 
+// The algorithm uniformly redistributes image greylevels so the probability
+// of each greylevel is approximately the same. 
 void histeq(uint8_t* result, const uint8_t* img, const int w, const int h)
 {
     float* imgHist=hist(img, w, h);
