@@ -4,8 +4,6 @@
 #include <stdint.h>
 
 
-int WIDTH = 240;
-int HEIGHT = 320;
 
 
 
@@ -77,7 +75,7 @@ void histeq(uint8_t* result, const uint8_t* img, const int w, const int h)
 }
 
 
-uint8_t* readPGM(const char* fname)
+uint8_t* readPGM(const char* fname, int& w, int& h)
 {
     FILE* fptr = fopen(fname, "r");
     char dummy[256];
@@ -96,13 +94,13 @@ uint8_t* readPGM(const char* fname)
         fgets(dummy, 256, fptr);
     }
 
-    sscanf(dummy, "%d %d", &WIDTH, &HEIGHT);
+    sscanf(dummy, "%d %d", &w, &h);
     fgets(dummy, 256, fptr);
 
-    printf("Image:%s\nWidth:%d\nHeight:%d\n", fname, WIDTH, HEIGHT);
+    printf("Image:%s\nWidth:%d\nHeight:%d\n", fname, w, h);
 
-    uint8_t* ret = (uint8_t*)malloc(WIDTH*HEIGHT*sizeof(uint8_t));
-    fread(ret, WIDTH*HEIGHT, 1, fptr); 
+    uint8_t* ret = (uint8_t*)malloc(w*h*sizeof(uint8_t));
+    fread(ret, w*h, 1, fptr); 
     fclose(fptr);
     return ret;
 }
@@ -110,8 +108,10 @@ uint8_t* readPGM(const char* fname)
 void writePGM(const char* fname, const uint8_t* img, const int w, const int h)
 {
     FILE* fptr = fopen(fname, "wb");
-    const char outdat[] = "P5\n#Equalised image\n240 320\n255\n";
-    fwrite(outdat, sizeof(char), sizeof(outdat), fptr);
+
+    char outdat[256];
+    sprintf(outdat, "P5\n# Equalised image\n%d %d\n255\n", w, h);
+    fprintf(fptr, "%s", outdat); //outdat, sizeof(char), sizeof(outdat), fptr);
     fwrite(img, sizeof(uint8_t), w*h, fptr);
     fclose(fptr);
 }
@@ -124,11 +124,12 @@ int main(int argc, char** argv)
         return 1;
     }
     const char* outfile = (argc == 3) ? argv[2] : "result.pgm";
-    uint8_t* img = readPGM(argv[1]);
+    int w, h;
+    uint8_t* img = readPGM(argv[1], w, h);
     if(img) {
-        uint8_t* result = (uint8_t*)malloc(WIDTH*HEIGHT*sizeof(uint8_t));
-        histeq(result, img, WIDTH, HEIGHT);
-        writePGM(outfile, result, WIDTH, HEIGHT);
+        uint8_t* result = (uint8_t*)malloc(w*h*sizeof(uint8_t));
+        histeq(result, img, w, h);
+        writePGM(outfile, result, w, h);
         free(img);
         free(result);
     }
