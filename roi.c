@@ -35,7 +35,30 @@ Image crop(const Image img,
 }
 
 
+// Search for the strip.
+// 
+// This is a first pass dump of ideas. Scan from the image edge
+// to find the strip edge. This is not straight forward because there
+// are false edges in the surrounding pixels.
+//
+// It works as follows:
+// 1. Threshold the image into black, white and grey
+// 
+// 2. Scan until a run of N black pixels is found, followed by a 
+// run of M white pixels.
+//
+// 3. If a grey pixel is found, flag it but continue the scan. If
+// more than O grey pixels are seen, reset the scan count.
+//
+// 4. Only scan the third of the image that is interesting
+//
+// 5. Compute the average X for the vertical edges and average
+// Y for the horizontal edges.
 
+// There are better ways to do this but they require a little more
+// time and effort, i.e. compute the edge response and given the
+// surrounding pixels (flow direction) classify the pixel as 
+// strip or non-strip edge.
 typedef struct _SearchState
 {
     int ctx;
@@ -168,7 +191,6 @@ AABB findStrip(const Image img)
             {
                 tmpLine[x] = 255;
                 minX[minXidx++] = x;
-                printf(" %d", x);
                 break;
             }
             if(x > img.width / 3) {
