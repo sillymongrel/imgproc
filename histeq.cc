@@ -11,7 +11,7 @@
 /// @param w        Width of the input image
 /// @param h        Height of the input image
 /// @return Histogram of the image.
-float* hist(Image img)
+float* hist(const Image& img)
 {
     float npix = img.width*img.height;
     float* ret = (float*)malloc(256 * sizeof(float));
@@ -46,8 +46,9 @@ float* hist(Image img)
 /// @param img          Input image pixels
 /// @param w            Width of the input image
 /// @param h            Height of the input image
-void histeq(uint8_t* result, const Image img)
+void histeq(Image& result, const Image& img)
 {
+    result.alloc(img.width, img.height);
     float* imgHist=hist(img);
     uint32_t* histEq = (uint32_t*)malloc(256*sizeof(uint32_t)); 
     memset(histEq, 0, 256*sizeof(uint32_t));
@@ -64,8 +65,8 @@ void histeq(uint8_t* result, const Image img)
 
     // Apply the new greylevels to the output image
     for(int y = 0; y < img.height; ++y) {
-        const uint8_t* scan = &img.pixels[y*img.width];
-        uint8_t* resScan = &result[y*img.width];
+        const uint8_t* scan = img.scanline(y);
+        uint8_t* resScan = result.scanline(y);
         for(int x = 0; x < img.width; ++x) {
             resScan[x] = histEq[scan[x]];
         }
@@ -83,13 +84,11 @@ int main(int argc, char** argv)
         return 1;
     }
     const char* outfile = (argc == 3) ? argv[2] : "result.pgm";
-    Image img = readPGM(argv[1]);
-    if(img.pixels) {
-        Image result = allocImage(img.width, img.height);
-        histeq(result.pixels, img);
+    Image img;
+    if(readPGM(img, argv[1])) {
+        Image result;
+        histeq(result, img);
         writePGM(outfile, result);
-        freeImage(&img);
-        freeImage(&result);
     }
 
     return 0;

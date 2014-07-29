@@ -49,13 +49,13 @@ const uint8_t* Image::scanline(int y) const
     }
 }
 
-Image readPGM(const char* fname)
+bool readPGM(Image& ret, const char* fname)
 {
     FILE* fptr = fopen(fname, "r");
     char dummy[256];
     if(!fptr) {
         printf("failed to read file '%s'\n", fname);
-        return Image();
+        return false;
     }
     // Skip the image header.
     fgets(dummy, 255, fptr);
@@ -74,22 +74,27 @@ Image readPGM(const char* fname)
 
     printf("Image:%s\nWidth:%d\nHeight:%d\n", fname, w, h);
 
-    Image ret;
     ret.alloc(w, h);
+    if(!ret.isValid()) {
+        return false;
+    }
     fread(&ret.pixels[0], ret.width * ret.height, 1, fptr); 
     fclose(fptr);
-    return ret;
+    return true;
 }
 
-void writePGM(const char* fname, const Image& img)
+bool writePGM(const char* fname, const Image& img)
 {
     FILE* fptr = fopen(fname, "wb");
-
+    if(!fptr) {
+        return false;
+    }
     char outdat[256];
     sprintf(outdat, "P5\n# Equalised image\n%d %d\n255\n", img.width, img.height);
     fprintf(fptr, "%s", outdat); //outdat, sizeof(char), sizeof(outdat), fptr);
     fwrite(&img.pixels[0], sizeof(uint8_t), img.size(), fptr);
     fclose(fptr);
+    return true;
 }
 
 bool AABB::isWithin(const Image& img) const

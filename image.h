@@ -26,8 +26,15 @@ struct Image
     {
         return this->width*this->height;
     }    
+    bool isValid() const
+    {
+        return this->pixels.size() > 0 && this->width > 0 && this->height > 0;
+    }
 
 };
+
+bool readPGM(Image& ret, const char* fname);
+bool writePGM(const char* fname, const Image& img);
 
 struct AABB
 {
@@ -57,7 +64,5 @@ public:
 
 };
 
-Image readPGM(const char* fname);
-void writePGM(const char* fname, const Image& img);
 
 #endif //imageH
