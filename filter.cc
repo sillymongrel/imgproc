@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <assert.h>
 #include "image.h"
 
 const int sharpMask[] = {-1, -1, -1,
@@ -56,9 +57,9 @@ uint8_t convolve3x3(const Image& imgIn, int x, int y, const int* mask, float sca
 
 
 
-Image emboss(const Image img)
+void emboss(Image& ret, const Image& img)
 {
-    Image ret = Image(img.width, img.height);
+    assert(ret.size() == img.size() && "image dimensions do not match");
     for(int y = 0; y < img.height; ++y)
     {
         uint8_t* retline = ret.scanline(y);
@@ -67,12 +68,11 @@ Image emboss(const Image img)
             retline[x] = convolve3x3(img, x, y, embossMask, embossScale);
         }
     }
-    return ret;
 }
 
-Image average(const Image img)
+void average(Image& ret, const Image& img)
 {
-    Image ret = Image(img.width, img.height);
+    assert(ret.size() == img.size() && "image dimensions do not match");
     for(int y = 0; y < img.height; ++y)
     {
         uint8_t* retline = ret.scanline(y);
@@ -82,11 +82,10 @@ Image average(const Image img)
             retline[x] = convolve3x3(img, x, y, avgMask, avgScale);
         }
     }
-    return ret;
 }
-Image sharpen(const Image img)
+void sharpen(Image& ret, const Image& img)
 {
-    Image ret = Image(img.width, img.height);
+    assert(ret.size() == img.size() && "image dimensions do not match");
     for(int y = 0; y < img.height; ++y)
     {
         uint8_t* retline = ret.scanline(y);
@@ -95,5 +94,4 @@ Image sharpen(const Image img)
             retline[x] = convolve3x3(img, x, y, sharpMask, sharpScale);
         }
     }
-    return ret;
 }

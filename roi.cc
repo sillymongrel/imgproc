@@ -15,19 +15,19 @@
 
 /// Crop a rectangular region of the input image and return
 /// as a new image. The crop is inclusive of the endX, endY.
-Image crop(const Image& img, 
+void crop(Image& ret,
+            const Image& img, 
             const AABB& aabb)
 {
     // Sanity check 
     assert(aabb.isWithin(img) && "AABB is outside image bounds");
 
-    Image ret = Image(aabb.width()+1, aabb.height()+1);
+    ret = Image(aabb.width()+1, aabb.height()+1);
     for(int y = aabb.ymin(), y1 = 0; y <= aabb.ymax(); ++y, ++y1)
     {
         const uint8_t* inLine = &img.pixels[y * img.width + aabb.xmin()];
         memcpy(ret.scanline(y1), inLine, ret.width * sizeof(uint8_t));
     }
-    return ret;
 }
 
 
@@ -145,14 +145,15 @@ static void updateState(SearchState* state, uint8_t pixel)
 // Search for the strip bar.
 // This is a very SIMPLE scan for the strip. It looks for a run of 
 // black pixels then finds the transition
-AABB findStrip(const Image img)
+AABB findStrip(const Image& img)
 {
     SearchState state;
     state.ctx = SEARCH_FOR_BLACK;
     state.pixCount = 0;
     
-    Image sharp = sharpen(img);
-    sharp = average(sharp);
+    Image sharp = Image(img.width, img.height);
+    sharpen(sharp, img);
+    average(sharp, sharp);
     Image test = Image(img.width, img.height);
     writePGM("sharpen.pgm", sharp);
 
@@ -211,8 +212,12 @@ int main(int argc, char** argv)
     aabb.set(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
     const char* outfile = (argc == 7) ? argv[6] : "result.pgm";
 
-    Image img = readPGM(infile);
-    Image result = crop(img, aabb);    
+    Image img;
+    readPGM(img, infile);
+
+    Image result;
+    crop(result, img, aabb);    
+
     writePGM(outfile, result);
 
     findStrip(img);
