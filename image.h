@@ -33,9 +33,6 @@ struct Image
 
 };
 
-bool readPGM(Image& ret, const char* fname);
-bool writePGM(const char* fname, const Image& img);
-
 struct AABB
 {
 private:
@@ -63,6 +60,10 @@ public:
     int height() const  {return _ymax-_ymin;}
 
 };
+bool readPGM(Image& ret, const char* fname);
+bool writePGM(const char* fname, const Image& img);
+
+void crop(Image& ret,const Image& img,const AABB& aabb);
 
 
 #endif //imageH

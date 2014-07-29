@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
+#include <assert.h>
+#include <string.h>
+
 #include "image.h"
 
 Image::Image() 
@@ -103,3 +106,19 @@ bool AABB::isWithin(const Image& img) const
            (this->_xmax < img.width) && (this->_ymax < img.height);
 }
 
+/// Crop a rectangular region of the input image and return
+/// as a new image. The crop is inclusive of the endX, endY.
+void crop(Image& ret,
+            const Image& img, 
+            const AABB& aabb)
+{
+    // Sanity check 
+    assert(aabb.isWithin(img) && "AABB is outside image bounds");
+
+    ret = Image(aabb.width()+1, aabb.height()+1);
+    for(int y = aabb.ymin(), y1 = 0; y <= aabb.ymax(); ++y, ++y1)
+    {
+        const uint8_t* inLine = &img.pixels[y * img.width + aabb.xmin()];
+        memcpy(ret.scanline(y1), inLine, ret.width * sizeof(uint8_t));
+    }
+}

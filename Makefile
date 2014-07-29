@@ -1,14 +1,11 @@
-CC=g++
-CFLAGS=-Wall -g -Werror
+CC=clang++
+CFLAGS=-Wall -g -Werror -fno-exceptions
 
 image.o:
 	$(CC) $(CFLAGS) -c image.cc
 
 filter.o: 
 	$(CC) $(CFLAGS) -c filter.cc
-
-qtree.o:
-	$(CC) $(CFLAGS) -c qtree.cc
 
 histeq.o:
 	$(CC) $(CFLAGS) -c histeq.cc

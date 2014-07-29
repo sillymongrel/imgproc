@@ -8,27 +8,84 @@
 
 #include "image.h"
 #include "filter.h"
+#include "qtree.h"
 
-
-
-
-
-/// Crop a rectangular region of the input image and return
-/// as a new image. The crop is inclusive of the endX, endY.
-void crop(Image& ret,
-            const Image& img, 
-            const AABB& aabb)
+struct SplitPred
 {
-    // Sanity check 
-    assert(aabb.isWithin(img) && "AABB is outside image bounds");
-
-    ret = Image(aabb.width()+1, aabb.height()+1);
-    for(int y = aabb.ymin(), y1 = 0; y <= aabb.ymax(); ++y, ++y1)
+    bool operator()(const Image& img, QTreeNode<float>& node)
     {
-        const uint8_t* inLine = &img.pixels[y * img.width + aabb.xmin()];
-        memcpy(ret.scanline(y1), inLine, ret.width * sizeof(uint8_t));
+        if(node.size() < 50) {
+            return false;
+        }
+        float avg = 0;
+        for(int y = node.top; y < node.bottom(); ++y)
+        {
+            const uint8_t* line = img.scanline(y);        
+            for(int x = node.left; x < node.right(); ++x)
+            {
+                avg += line[x];
+            }        
+        }
+        avg /= (float)node.size();
+        node.data = avg;
+        for(int y = node.top; y < node.bottom(); ++y)
+        {
+            const uint8_t* line = img.scanline(y);        
+            for(int x = node.left; x < node.right(); ++x)
+            {
+                if(abs(line[x] - avg) > 20) {
+                    return true;
+                }
+            }        
+        }
+        return false; // All pixels with 30 of the average
     }
+};
+
+struct IterFunc
+{
+    Image* image;
+    const Image* source;
+    IterFunc(Image* img, const Image* src) :
+        image(img), source(src)
+    {
+    }
+    bool operator()(QTreeNode<float>& node)
+    {
+        uint8_t* lineTop = image->scanline(node.top);
+        uint8_t* lineBottom = image->scanline(node.bottom()-1);
+        for(int x = node.left; x < node.right(); ++x)
+        {
+            lineTop[x] = 255;
+            lineBottom[x] = 255;
+        }
+
+        for(int y = node.top; y < node.bottom(); ++y)
+        {
+            image->pixels[node.left + y * image->width] = 255;
+            image->pixels[node.right()-1 + y * image->width] = 255;
+        }
+        return true;
+    }
+};
+
+void quadtreeTest(const Image& img)
+{
+    Image test = img;
+    // Split on average pixel value to find regions of similar grey level.
+    QTree<float> qt;
+    SplitPred splitem;
+    qt.make(test, splitem);
+
+    IterFunc iterfunc(&test, &img);
+    qt.foreach(iterfunc);
+
+    writePGM("qtreetest.pgm", test);
 }
+
+
+
+
 
 
 // Search for the strip.
@@ -219,6 +276,8 @@ int main(int argc, char** argv)
     crop(result, img, aabb);    
 
     writePGM(outfile, result);
+
+    quadtreeTest(img);
 
     findStrip(img);
 }
