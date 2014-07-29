@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <assert.h>
 #include <string.h>
+#include <vector>
+
 
 #include "image.h"
 #include "filter.h"
@@ -13,23 +15,17 @@
 
 /// Crop a rectangular region of the input image and return
 /// as a new image. The crop is inclusive of the endX, endY.
-Image crop(const Image img, 
-            const AABB aabb)
+Image crop(const Image& img, 
+            const AABB& aabb)
 {
     // Sanity check 
-    
-    assert(aabb.xmax > aabb.xmin && "aabb.xmax must be greater than aabb.xmin");
-    assert(aabb.ymax > aabb.ymin && "aabb.ymax must be greater than aabb.ymin");
-    assert(aabb.xmin >= 0 && "aabb.xmin must be greater than 0");
-    assert(aabb.ymin >= 0 && "aabb.ymin must be greater than 0");
-    assert(aabb.xmax < img.width && "aabb.xmax must be less than the image width");
-    assert(aabb.ymax < img.height && "aabb.ymax must be less than the image height");
+    assert(aabb.isWithin(img) && "AABB is outside image bounds");
 
-    Image ret = allocImage(aabb.xmax-aabb.xmin+1, aabb.ymax-aabb.ymin+1);
-    for(int y = aabb.ymin, y1 = 0; y <= aabb.ymax; ++y, ++y1)
+    Image ret = Image(aabb.width()+1, aabb.height()+1);
+    for(int y = aabb.ymin(), y1 = 0; y <= aabb.ymax(); ++y, ++y1)
     {
-        uint8_t* inLine = &img.pixels[y * img.width + aabb.xmin];
-        memcpy(&ret.pixels[y1 * ret.width], inLine, ret.width * sizeof(uint8_t));
+        const uint8_t* inLine = &img.pixels[y * img.width + aabb.xmin()];
+        memcpy(ret.scanline(y1), inLine, ret.width * sizeof(uint8_t));
     }
     return ret;
 }
@@ -157,15 +153,14 @@ AABB findStrip(const Image img)
     
     Image sharp = sharpen(img);
     sharp = average(sharp);
-    Image test = allocImage(img.width, img.height);
+    Image test = Image(img.width, img.height);
     writePGM("sharpen.pgm", sharp);
 
-    memset(test.pixels, 0, (img.width*img.height)*sizeof(uint8_t));
-
-    // Hold all X and Y coordinates for the min
-    uint8_t* minX = (uint8_t*)malloc(sharp.height * sizeof(uint8_t));
     
-    int minXidx = 0;
+    // Hold all X and Y coordinates for the min
+    std::vector<int> minX;
+    minX.reserve(sharp.height);
+    
     // Scan each row
     for(int y = 0; y < sharp.height; ++y)
     {
@@ -190,7 +185,7 @@ AABB findStrip(const Image img)
             if(state.ctx == FOUND_TRANSITION) 
             {
                 tmpLine[x] = 255;
-                minX[minXidx++] = x;
+                minX.push_back(x);
                 break;
             }
             if(x > img.width / 3) {
@@ -199,7 +194,6 @@ AABB findStrip(const Image img)
         }
     }
     writePGM("test.pgm", test);
-    freeImage(&test);
     AABB ret;
     return ret;
 }
@@ -214,11 +208,7 @@ int main(int argc, char** argv)
 
     char* infile = argv[1];
     AABB aabb;
-    aabb.xmin = atoi(argv[2]);
-    aabb.ymin = atoi(argv[3]);
-    aabb.xmax = atoi(argv[4]);
-    aabb.ymax = atoi(argv[5]);
-
+    aabb.set(atoi(argv[2]), atoi(argv[3]), atoi(argv[4]), atoi(argv[5]));
     const char* outfile = (argc == 7) ? argv[6] : "result.pgm";
 
     Image img = readPGM(infile);
@@ -226,8 +216,5 @@ int main(int argc, char** argv)
     writePGM(outfile, result);
 
     findStrip(img);
-
-    freeImage(&img);
-    freeImage(&result);
 }
 

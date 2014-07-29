@@ -14,8 +14,9 @@ const int embossMask[] = {-2, 1, 0,
                       -1, 1, 1,
                       0, 1, 2};
 const float embossScale = 0.33;
+
 // a simple repeat at border 3x3 convolution
-uint8_t convolve3x3(const Image imgIn, int x, int y, const int* mask, float scale)
+uint8_t convolve3x3(const Image& imgIn, int x, int y, const int* mask, float scale)
 {
     float newpix = 0.0;
     // 3x3, just do it manually...
@@ -26,19 +27,19 @@ uint8_t convolve3x3(const Image imgIn, int x, int y, const int* mask, float scal
     int maxX = (x+1 < imgIn.width) ? x+1 : imgIn.width-1;
 
     // top row
-    uint8_t* row = &imgIn.pixels[minY * imgIn.width];
+    const uint8_t* row = imgIn.scanline(minY);
     newpix  +=  mask[0] * row[minX];
     newpix  +=  mask[1] * row[x];
     newpix  +=  mask[2] * row[maxX];
 
     // middle row
-    row = &imgIn.pixels[y * imgIn.width];
+    row = imgIn.scanline(y);
     newpix  +=  mask[3] * row[minX];
     newpix  +=  mask[4] * row[x];
     newpix  +=  mask[5] * row[maxX];
 
     // Bottom row
-    row = &imgIn.pixels[maxY * imgIn.width];
+    row = imgIn.scanline(maxY);
     newpix  +=  mask[6] * row[minX];
     newpix  +=  mask[7] * row[x];
     newpix  +=  mask[8] * row[maxX];
@@ -57,10 +58,10 @@ uint8_t convolve3x3(const Image imgIn, int x, int y, const int* mask, float scal
 
 Image emboss(const Image img)
 {
-    Image ret = allocImage(img.width, img.height);
+    Image ret = Image(img.width, img.height);
     for(int y = 0; y < img.height; ++y)
     {
-        uint8_t* retline = &ret.pixels[y * img.width];
+        uint8_t* retline = ret.scanline(y);
         for(int x = 0; x < img.width; ++x)
         {
             retline[x] = convolve3x3(img, x, y, embossMask, embossScale);
@@ -71,10 +72,11 @@ Image emboss(const Image img)
 
 Image average(const Image img)
 {
-    Image ret = allocImage(img.width, img.height);
+    Image ret = Image(img.width, img.height);
     for(int y = 0; y < img.height; ++y)
     {
-        uint8_t* retline = &ret.pixels[y * img.width];
+        uint8_t* retline = ret.scanline(y);
+
         for(int x = 0; x < img.width; ++x)
         {
             retline[x] = convolve3x3(img, x, y, avgMask, avgScale);
@@ -84,10 +86,10 @@ Image average(const Image img)
 }
 Image sharpen(const Image img)
 {
-    Image ret = allocImage(img.width, img.height);
+    Image ret = Image(img.width, img.height);
     for(int y = 0; y < img.height; ++y)
     {
-        uint8_t* retline = &ret.pixels[y * img.width];
+        uint8_t* retline = ret.scanline(y);
         for(int x = 0; x < img.width; ++x)
         {
             retline[x] = convolve3x3(img, x, y, sharpMask, sharpScale);
